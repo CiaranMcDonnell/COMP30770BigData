@@ -1,0 +1,29 @@
+Title: Quick Access of Related Data for FX Calibration
+
+Ciaran XXXXX Imrane AMRI 22412352
+
+<github link>
+
+# Dataset
+Our dataset consists of two meaningful components:
+
+- FX Quotes. These tell us the exchange rate from a currency to another. We use open (beginning of day) for stability
+- TS. Tells us movement of interest rate for that currency based on an index
+
+volume
+
+variety 
+
+
+# Objective
+
+Mapping data in finance is often a bottleneck for calibration. We aim to simplify this process by offloading the heavy
+thinking to Spark. With this proof of concept, we aim to show a scalable solution to the century old problem of
+relating large financial datasets across each other at dates/tenors.
+
+# Trad. solution
+
+
+
+
+# Map reduce
