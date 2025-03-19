@@ -26,7 +26,7 @@ class ControlJob:
         joined_data["FX"] = joined_data[f"{fx_file.split('/')[-1].split('.')[0]}_Open"]
         self.data = joined_data[["Date", "FX", "TS"]]
 
-        self.time = time.time() - self.time
+        self.time = (time.time() - self.time) * 1_000 # ms
         self.memory_used = get_memory_usage() / (1024**2) - start_memory
 
     def memory(self):
@@ -35,7 +35,7 @@ class ControlJob:
     def elapsed(self) -> float:
         return self.time
 
-    def _(self):
+    def get(self):
         return self.data
 
     def get_row(self, date: str):

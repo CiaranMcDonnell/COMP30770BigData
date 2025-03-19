@@ -27,6 +27,7 @@ class SparkJob:
             .set("spark.executor.extraJavaOptions", "-XX:ReservedCodeCacheSize=1024m")
         )
         sc = SparkContext(conf=conf)
+        sc.setLogLevel("OFF")
 
         start_time = time.time()
 
@@ -62,7 +63,7 @@ class SparkJob:
         )
 
         self.data_dict = data_by_date
-        self.elapsed_time = time.time() - start_time
+        self.elapsed_time = (time.time() - start_time) * 1_000 # ms
         self.memory_used = get_memory_usage() / (1024**2) - start_memory
 
         self.sc = sc
@@ -70,7 +71,7 @@ class SparkJob:
     def kill(self):
         self.sc.stop()
 
-    def _(self):
+    def get(self):
         return self.data_dict
 
     def memory(self):
@@ -81,6 +82,9 @@ class SparkJob:
 
     def dates(self):
         return list(self.data_dict.keys())
+    
+    def get_row(self, date_str: str):
+        return self.data_dict.get(date_str, [])[0]
 
     def _parse_fx(self, line):
         fields = line.split(",")
@@ -103,6 +107,3 @@ class SparkJob:
         euribor_rates = [float(rate.strip()) for rate in fields[1:6]]
 
         return (date_val, euribor_rates)
-
-    def get_row(self, date_str: str):
-        return self.data_dict.get(date_str, [])[0]

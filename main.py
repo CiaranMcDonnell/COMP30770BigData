@@ -1,55 +1,52 @@
 from src.spark import SparkJob
 from src.control import ControlJob
-import logging
 import argparse
 from src.const import APP_NAME
 from src.finance import Model
 import os
 import matplotlib.pyplot as plt
 
-os.environ["PYTHONHASHSEED"] = "0"
+os.environ["PYTHONHASHSEED"] = "0" # otherwise spark complains about random hashing
 
-TS_FILE: str = ""
-FX_FILE: str = ""
-
-logger = logging.getLogger(__name__)
-
-
-def main():
+def parse_args():
     parser: argparse.ArgumentParser = argparse.ArgumentParser(
         prog=APP_NAME,
     )
     parser.add_argument("-ts_file", default="./data/euribor.csv")
-    parser.add_argument("-dom-ccy", default="EUR")
-    parser.add_argument("-for-ccy", default="JPY")
+    parser.add_argument("-dom-ccy", default="EUR") # we'd like to fix it to EUR
+    parser.add_argument("-ccy", default="JPY")
     parser.add_argument("-runs", default=50)
-    args = parser.parse_args()
+    return parser.parse_args()
+
+def main():
+    args = parse_args()
 
     TS_FILE = args.ts_file
-    FX_FILE = f"./data/{args.dom_ccy}{args.for_ccy}.csv"
+    FX_FILE = f"./data/{args.dom_ccy}{args.ccy}.csv"
 
     def validate_datasets():
         j0 = ControlJob(TS_FILE, FX_FILE)
         j1 = SparkJob(TS_FILE, FX_FILE)
 
-        assert len(j0._()) == len(j1._())
+        assert len(j0.get()) == len(j1.get())
 
         j1.kill()
 
     validate_datasets()
 
     # list of dates we calibrate with
+    # can be any dates present in both csvs
     dates: list[str] = ["2020-03-03", "2005-06-08", "2009-12-21", "2010-09-01"]
 
     def benchmark(runs):
+        control_job = ControlJob(TS_FILE, FX_FILE)
+        spark_job = SparkJob(TS_FILE, FX_FILE)
+
         control_times = []
         spark_times = []
 
         control_memory = []
         spark_memory = []
-
-        control_job = ControlJob(TS_FILE, FX_FILE)
-        spark_job = SparkJob(TS_FILE, FX_FILE)
 
         for _ in range(int(runs)):
             control_model = Model(control_job, dates)
@@ -75,6 +72,7 @@ def main():
                 "Spark Memory",
             ]
         )
+        plt.title("Benchmarking of FX Calibration* Using Spark and Pandas")
         plt.show()
 
     benchmark(args.runs)
