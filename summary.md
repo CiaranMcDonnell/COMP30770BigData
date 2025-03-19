@@ -24,6 +24,26 @@ relating large financial datasets across each other at dates/tenors.
 # Trad. solution
 
 
+use pandas to read the csvs
+```python
+    fx_data = pd.read_csv(fx_file)
+    ts_data = pd.read_csv(ts_file)
+```
+
+merge data with pandas utility at date
+```python
+    joined_data = pd.merge(fx_data, ts_data, on="Date", how="inner")
+```
+
+merge columns of term structure data into new column, i.e. (1w, 1m, 3m, ...) -> ([1w, 1m, 3m, ...])
+```python
+    joined_data["TS"] = joined_data[["1w", "1m", "3m", "6m", "12m"]].apply(
+        lambda row: row.tolist(), axis=1
+    )
+```
+
+Finally we remap some keys for ease of access later
 
 
 # Map reduce
+
