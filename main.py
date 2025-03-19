@@ -14,6 +14,7 @@ FX_FILE: str = ""
 
 logger = logging.getLogger(__name__)
 
+
 def main():
     parser: argparse.ArgumentParser = argparse.ArgumentParser(
         prog=APP_NAME,
@@ -38,7 +39,7 @@ def main():
     validate_datasets()
 
     # list of dates we calibrate with
-    dates: list[str] = ["2020-03-03", "2005-06-08", "2009-12-21"]
+    dates: list[str] = ["2020-03-03", "2005-06-08", "2009-12-21", "2010-09-01"]
 
     def benchmark(runs):
         control_times = []
@@ -61,16 +62,23 @@ def main():
 
             spark_times.append(spark_model.elapsed())
             spark_memory.append(spark_model.memory())
-        
 
         plt.plot(control_times, color="black")
         plt.plot(spark_times, color="red")
-        #plt.plot(control_memory, color="grey")
-        #plt.plot(spark_memory, color="orange")
-        plt.legend(["Control Calibration Time", "Spark Calibration Time", "Control Memory", "Spark Memory"])
+        # plt.plot(control_memory, color="grey")
+        # plt.plot(spark_memory, color="orange")
+        plt.legend(
+            [
+                "Control Calibration Time",
+                "Spark Calibration Time",
+                "Control Memory",
+                "Spark Memory",
+            ]
+        )
         plt.show()
 
     benchmark(args.runs)
+
 
 if __name__ == "__main__":
     main()
