@@ -1,0 +1,18 @@
+[project]
+name = "comp30770bigdata"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "argparse>=1.4.0",
+    "fastparquet>=2024.11.0",
+    "findspark>=2.0.1",
+    "logging>=0.4.9.6",
+    "matplotlib>=3.10.1",
+    "pandas>=2.2.3",
+    "psutil>=7.0.0",
+    "pyarrow>=19.0.1",
+    "pyspark>=3.5.5",
+    "scipy>=1.15.2",
+]
