@@ -3,6 +3,6 @@
 
 # data
 /data
-
+*.pyc
 # mac
 .DS_Store
