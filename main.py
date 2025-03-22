@@ -6,27 +6,34 @@ from src.finance import Model
 import os
 import matplotlib.pyplot as plt
 
-os.environ["PYTHONHASHSEED"] = "0" # otherwise spark complains about random hashing
+os.environ["PYTHONHASHSEED"] = "0"  # otherwise spark complains about random hashing
+
 
 def parse_args():
     parser: argparse.ArgumentParser = argparse.ArgumentParser(
         prog=APP_NAME,
     )
-    parser.add_argument("-ts_file", default="./data/euribor.csv")
-    parser.add_argument("-dom-ccy", default="EUR") # we'd like to fix it to EUR
-    parser.add_argument("-ccy", default="JPY")
+    parser.add_argument("-ts_file", default="./data/ts/euribor.csv")
     parser.add_argument("-runs", default=50)
+    parser.add_argument("-files", default=-1)
     return parser.parse_args()
+
 
 def main():
     args = parse_args()
 
     TS_FILE = args.ts_file
-    FX_FILE = f"./data/{args.dom_ccy}{args.ccy}.csv"
+    FX_FILE = f"./data/fx2"
+
+    if int(args.files) != -1:
+        from src.const import FOREIGN_CCY, DOMESTIC_CCY
+        DOMESTIC_CCY = DOMESTIC_CCY[:int(args.files)]
+        FOREIGN_CCY = FOREIGN_CCY[:int(args.files)]
+
 
     def validate_datasets():
-        j0 = ControlJob(TS_FILE, FX_FILE)
         j1 = SparkJob(TS_FILE, FX_FILE)
+        j0 = ControlJob(TS_FILE, FX_FILE)
 
         assert len(j0.get()) == len(j1.get())
 
@@ -42,8 +49,8 @@ def main():
         control_job = ControlJob(TS_FILE, FX_FILE)
         spark_job = SparkJob(TS_FILE, FX_FILE)
 
-        control_times = []
-        spark_times = []
+        control_times = [control_job.elapsed()]
+        spark_times = [spark_job.elapsed()]
 
         control_memory = []
         spark_memory = []

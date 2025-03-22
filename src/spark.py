@@ -4,9 +4,10 @@ findspark.init()
 from numpy import broadcast
 from pyspark import SparkConf, SparkContext
 import time
-from .const import APP_NAME
+from src.const import APP_NAME, FOREIGN_CCY, DOMESTIC_CCY
 import psutil
 import os
+from pathlib import Path
 
 
 def get_memory_usage():
@@ -31,39 +32,35 @@ class SparkJob:
 
         start_time = time.time()
 
-        fx_data = (
-            sc.textFile(fx_file).map(self._parse_fx).filter(lambda x: x is not None)
-        )
-        ts_data = (
+        csv_folder = Path(fx_file)
+
+        ts_rdd = (
             sc.textFile(ts_file).map(self._parse_ts).filter(lambda x: x is not None)
         )
+        fx_map = [
+            (dom, foreign, sc.textFile(str(csv_folder / f"{dom}-{foreign}.csv")), [])
+            for dom in DOMESTIC_CCY
+            for foreign in FOREIGN_CCY
+            if (csv_folder / f"{dom}-{foreign}.csv").exists()
+        ]
 
-        ts_dict = dict(ts_data.collect())
-        broadcast_ts = sc.broadcast(ts_dict)
+        for domestic, foreign, rdd, res in fx_map:
+            print(f"{domestic=} {foreign=}")
+            # rdd.collect()
+            res = rdd.reduce(
+                lambda a, b: (
+                    a[0] + b[0],
+                    a[1] + b[1], 
+                    a[2] + b[2],
+                    a[3] + b[3], 
+                    a[4] + b[4],
+                )  
+            )
 
-        # Define a function to join each FX record with the broadcasted Euribor data
-        def join_with_euribor(record):
-            # record is (date, fx_rate)
-            date, fx_rate = record
-            euribor_rates = broadcast_ts.value.get(date)
-            if euribor_rates is not None:
-                return (date, fx_rate, euribor_rates)
-            else:
-                return None
+        self._ts = ts_rdd
+        self._fx = fx_map
 
-        joined_data = fx_data.map(join_with_euribor).filter(lambda x: x is not None)
-
-        # instead of collecting to a list, group by date for fast lookup
-        # map to pairs where the key is the date, then group all records by date
-        data_by_date = (
-            joined_data.map(lambda record: (record[0], record))
-            .groupByKey()
-            .mapValues(list)
-            .collectAsMap()
-        )
-
-        self.data_dict = data_by_date
-        self.elapsed_time = (time.time() - start_time) * 1_000 # ms
+        self.elapsed_time = (time.time() - start_time) * 1_000  # ms
         self.memory_used = get_memory_usage() / (1024**2) - start_memory
 
         self.sc = sc
@@ -71,8 +68,11 @@ class SparkJob:
     def kill(self):
         self.sc.stop()
 
-    def get(self):
-        return self.data_dict
+    def ts(self):
+        return self._ts
+
+    def fx(self):
+        return self._fx
 
     def memory(self):
         return self.memory_used
@@ -82,7 +82,7 @@ class SparkJob:
 
     def dates(self):
         return list(self.data_dict.keys())
-    
+
     def get_row(self, date_str: str):
         return self.data_dict.get(date_str, [])[0]
 

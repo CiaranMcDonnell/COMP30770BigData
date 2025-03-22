@@ -3,6 +3,9 @@ import time
 import matplotlib.pyplot as plt
 import psutil
 import os
+from pathlib import Path
+from collections import defaultdict
+from src.const import FOREIGN_CCY, DOMESTIC_CCY
 
 
 def get_memory_usage():
@@ -16,17 +19,39 @@ class ControlJob:
         start_memory = get_memory_usage() / (1024**2)  # MB
         self.time = time.time()
 
-        fx_data = pd.read_csv(fx_file)
-        ts_data = pd.read_csv(ts_file)
+        csv_folder = Path(fx_file)
 
-        joined_data = pd.merge(fx_data, ts_data, on="Date", how="inner")
-        joined_data["TS"] = joined_data[["1w", "1m", "3m", "6m", "12m"]].apply(
-            lambda row: row.tolist(), axis=1
-        )
-        joined_data["FX"] = joined_data[f"{fx_file.split('/')[-1].split('.')[0]}_Open"]
-        self.data = joined_data[["Date", "FX", "TS"]]
+        df_map = [
+            (dom, foreign, pd.read_csv(f"{dom}-{foreign}.csv"), [])
+            for dom in DOMESTIC_CCY
+            for foreign in FOREIGN_CCY
+            if (csv_folder / f"{dom}-{foreign}.csv").exists()
+        ]
 
-        self.time = (time.time() - self.time) * 1_000 # ms
+        for dom, foreign, df, res in df_map:
+
+            df["open"] = pd.to_numeric(df["open"], errors="coerce")
+            df["low"] = pd.to_numeric(df["low"], errors="coerce")
+            df["close"] = pd.to_numeric(df["close"], errors="coerce")
+            df["volume"] = pd.to_numeric(df["volume"], errors="coerce")
+
+  
+            sum_open = df["open"].sum()
+            sum_low = df["low"].sum()
+            sum_close = df["close"].sum()
+            total_volume = df["volume"].sum()
+            count = len(df)
+
+            avg_open = sum_open / count if count else None
+            avg_low = sum_low / count if count else None
+            avg_close = sum_close / count if count else None
+
+            res.append([dom, foreign, avg_open, avg_low, avg_close, total_volume])
+
+        self._ts = pd.read_csv(ts_file)
+        self._fx = df_map
+
+        self.time = (time.time() - self.time) * 1_000  # ms
         self.memory_used = get_memory_usage() / (1024**2) - start_memory
 
     def memory(self):
@@ -35,8 +60,8 @@ class ControlJob:
     def elapsed(self) -> float:
         return self.time
 
-    def get(self):
-        return self.data
+    def ts(self):
+        return self._ts
 
-    def get_row(self, date: str):
-        return self.data.loc[self.data["Date"] == date]
+    def fx(self):
+        return self._fx
