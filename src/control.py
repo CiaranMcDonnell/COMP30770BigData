@@ -28,7 +28,7 @@ class ControlJob:
             if (csv_folder / f"{dom}-{foreign}.csv").exists()
         ]
 
-        for dom, foreign, df, res in df_map:
+        for _, _, df, res in df_map:
             sum_open = sum(df["open"])
             sum_low = sum(df["low"])
             sum_close = sum(df["close"])
@@ -58,3 +58,6 @@ class ControlJob:
 
     def fx(self):
         return self._fx
+    
+    def kill(self):
+        pass
