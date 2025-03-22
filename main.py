@@ -26,14 +26,15 @@ def main():
     FX_FILE = f"./data/fx2"
 
     def validate_datasets():
-        j0 = ControlJob(TS_FILE, FX_FILE)
         j1 = SparkJob(TS_FILE, FX_FILE)
+        j0 = ControlJob(TS_FILE, FX_FILE)
+        
 
         assert len(j0.fx()) == len(j1.fx())
 
-       # for v0, v1 in zip(j0.fx(), j1.fx()):
-       #     print(f"{v0[-1]}\n{v1[-1]}")
-       # print(f"{j0.elapsed()=}, {j1.elapsed()=}")
+        for v0, v1 in zip(j0.fx(), j1.fx()):
+             print(f"{v0[-1]}\n{v1[-1]}")
+        print(f"{j0.elapsed()=}, {j1.elapsed()=}")
         j1.kill()
 
     validate_datasets()

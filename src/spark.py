@@ -1,7 +1,5 @@
 import findspark
-
 findspark.init()
-from numpy import broadcast
 from pyspark import SparkConf, SparkContext
 import time
 from src.const import APP_NAME, FOREIGN_CCY, DOMESTIC_CCY
@@ -24,9 +22,11 @@ class SparkJob:
             SparkConf()
             .setMaster("local[*]")
             .setAppName(APP_NAME)
-            .set("spark.default.parallelism", "12")
+            .set("spark.default.parallelism", "4")
             .set("spark.driver.extraJavaOptions", "-XX:ReservedCodeCacheSize=2048m")
             .set("spark.executor.extraJavaOptions", "-XX:ReservedCodeCacheSize=2048m")
+            .set("spark.memory.offHeap.enabled", "true")
+            .set("spark.memory.offHeap.size", "2g")
         )
         sc = SparkContext(conf=conf)
         sc.setLogLevel("OFF")
@@ -38,42 +38,46 @@ class SparkJob:
         ts_rdd = (
             sc.textFile(ts_file, minPartitions=6).map(self._parse_ts).filter(lambda x: x is not None)
         )
+        
+        def process_fx(dom, foreign):
+            file_path = csv_folder / f"{dom}-{foreign}.csv"
+            file_rdd = sc.textFile(str(file_path), minPartitions=32)
 
-        fx_results = []
+            def skip_header(idx, iterator):
+                if idx == 0:
+                    next(iterator, None)
+                return iterator
+            
+            data_rdd = file_rdd.mapPartitionsWithIndex(skip_header) \
+                               .map(lambda line: line.split(",")) \
+                               .map(lambda fields: (
+                                   float(fields[0]),   # open
+                                   float(fields[2]),   # low
+                                   float(fields[3]),   # close
+                                   float(fields[4]),   # volume
+                                   1                   # count
+                               ))
+            total = data_rdd.reduce(lambda a, b: (
+                a[0] + b[0],
+                a[1] + b[1],
+                a[2] + b[2],
+                a[3] + b[3],
+                a[4] + b[4]
+            ))
+            count = total[4]
+            avg_open = total[0] / count if count != 0 else 0
+            avg_low = total[1] / count if count != 0 else 0
+            avg_close = total[2] / count if count != 0 else 0
+            total_volume = total[3]
+
+            return [dom, foreign, file_rdd, [avg_open, avg_low, avg_close, total_volume]]
+        
+        fx_map = []
         for dom in DOMESTIC_CCY:
             for foreign in FOREIGN_CCY:
                 file_path = csv_folder / f"{dom}-{foreign}.csv"
                 if file_path.exists():
-                    file_rdd = sc.textFile(str(file_path), minPartitions=32)
-                    header = file_rdd.first()
-                    
-                    data_rdd = file_rdd.filter(lambda line: line != header) \
-                                .map(lambda line: line.split(",")) \
-                                .map(lambda fields: (float(fields[0]),   # open
-                                                    float(fields[2]),   # low
-                                                    float(fields[3]),   # close
-                                                    float(fields[4]),   # volume
-                                                    1))                 # count
-                    
-                    total = data_rdd.reduce(
-                        lambda a, b: (
-                            a[0] + b[0],  # open
-                            a[1] + b[1],  # low
-                            a[2] + b[2],  # close
-                            a[3] + b[3],  # volume
-                            a[4] + b[4]   # count
-                        )
-                    )
-                    
-                    count = total[4]
-                    avg_open = total[0] / count if count != 0 else 0
-                    avg_low = total[1] / count if count != 0 else 0
-                    avg_close = total[2] / count if count != 0 else 0
-                    total_volume = total[3]
-                    
-                    fx_results.append((dom, foreign, file_rdd, [avg_open, avg_low, avg_close, total_volume]))
-        
-        fx_map = fx_results
+                    fx_map.append(process_fx(dom, foreign))
 
         self._ts = ts_rdd
         self._fx = fx_map

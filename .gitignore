@@ -4,5 +4,7 @@
 # data
 /data
 *.pyc
+__pycache__
+
 # mac
 .DS_Store
