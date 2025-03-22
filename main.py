@@ -32,12 +32,17 @@ def main():
 
 
     def validate_datasets():
-        j1 = SparkJob(TS_FILE, FX_FILE)
         j0 = ControlJob(TS_FILE, FX_FILE)
+        j1 = SparkJob(TS_FILE, FX_FILE)
+        
 
-        assert len(j0.get()) == len(j1.get())
+        assert len(j0.fx()) == len(j1.fx())
+
+        for v0, v1 in zip(j0.fx(), j1.fx()):
+            print(f"{v0[-1]}\n{v1[-1]}")
 
         j1.kill()
+
 
     validate_datasets()
 

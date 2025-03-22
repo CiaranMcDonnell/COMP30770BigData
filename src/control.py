@@ -22,31 +22,24 @@ class ControlJob:
         csv_folder = Path(fx_file)
 
         df_map = [
-            (dom, foreign, pd.read_csv(f"{dom}-{foreign}.csv"), [])
+            (dom, foreign, pd.read_csv(f"{fx_file}/{dom}-{foreign}.csv"), [])
             for dom in DOMESTIC_CCY
             for foreign in FOREIGN_CCY
             if (csv_folder / f"{dom}-{foreign}.csv").exists()
         ]
 
         for dom, foreign, df, res in df_map:
-
-            df["open"] = pd.to_numeric(df["open"], errors="coerce")
-            df["low"] = pd.to_numeric(df["low"], errors="coerce")
-            df["close"] = pd.to_numeric(df["close"], errors="coerce")
-            df["volume"] = pd.to_numeric(df["volume"], errors="coerce")
-
-  
-            sum_open = df["open"].sum()
-            sum_low = df["low"].sum()
-            sum_close = df["close"].sum()
-            total_volume = df["volume"].sum()
+            sum_open = sum(df["open"])
+            sum_low = sum(df["low"])
+            sum_close = sum(df["close"])
+            total_volume = sum(df["volume"])
             count = len(df)
 
             avg_open = sum_open / count if count else None
             avg_low = sum_low / count if count else None
             avg_close = sum_close / count if count else None
 
-            res.append([dom, foreign, avg_open, avg_low, avg_close, total_volume])
+            res.append([avg_open, avg_low, avg_close, total_volume])
 
         self._ts = pd.read_csv(ts_file)
         self._fx = df_map

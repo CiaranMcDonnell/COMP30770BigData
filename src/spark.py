@@ -45,17 +45,32 @@ class SparkJob:
         ]
 
         for domestic, foreign, rdd, res in fx_map:
-            print(f"{domestic=} {foreign=}")
-            # rdd.collect()
-            res = rdd.reduce(
+            header = rdd.first()
+            data_rdd = rdd.filter(lambda line: line != header) \
+                          .map(lambda line: line.split(",")) \
+                          .map(lambda fields: (float(fields[0]),   # open
+                                               float(fields[2]),   # low
+                                               float(fields[3]),   # close
+                                               float(fields[4]),   # volume
+                                               1))                 # count
+
+            total = data_rdd.reduce(
                 lambda a, b: (
                     a[0] + b[0],
                     a[1] + b[1], 
-                    a[2] + b[2],
-                    a[3] + b[3], 
-                    a[4] + b[4],
-                )  
+                    a[2] + b[2],  
+                    a[3] + b[3],
+                    a[4] + b[4]   
+                )
             )
+            count = total[4]
+
+            avg_open = total[0] / count if count != 0 else 0
+            avg_low = total[1] / count if count != 0 else 0
+            avg_close = total[2] / count if count != 0 else 0
+            total_volume = total[3]
+            
+            res.append([avg_open, avg_low, avg_close, total_volume])
 
         self._ts = ts_rdd
         self._fx = fx_map
