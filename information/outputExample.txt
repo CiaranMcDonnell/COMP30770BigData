@@ -1,0 +1,3 @@
+{"dom_currency":"DOT","foreign_currency":"BUSD","avg_open":18.564233779907227,"avg_low":18.544809341430664,"avg_close":18.564037322998047,"total_volume":1172410368}
+{"dom_currency":"SNX","foreign_currency":"BUSD","avg_open":7.831169128417969,"avg_low":7.8267645835876465,"avg_close":7.830989837646484,"total_volume":204238512}
+{"dom_currency":"DLT","foreign_currency":"ETH","avg_open":0.000387306121410802,"avg_low":0.0003870896762236953,"avg_close":0.000387286941986531,"total_volume":686501120}

@@ -4,7 +4,9 @@
 # data
 /data
 *.pyc
-__pycache__
+./__pycache__
 
 # mac
 .DS_Store
+/src/__pycache__
+.vscode/settings.json

@@ -1,3 +1,0 @@
-av(open), avg(close), avg(low, high) ...
-
-calibrate against TS
